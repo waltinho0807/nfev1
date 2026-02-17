@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: nfe-system
+    runtime: node
+    nodeVersion: "20"
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
