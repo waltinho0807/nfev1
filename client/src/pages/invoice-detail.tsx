@@ -1,10 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useRoute, Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -13,21 +21,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileText, Printer } from "lucide-react";
+import { ArrowLeft, FileText, Send, Download, FileCode, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { useState } from "react";
 import type { Invoice, InvoiceItem } from "@shared/schema";
 
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     rascunho: "",
+    processando: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     autorizada: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     cancelada: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     rejeitada: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    erro_assinatura: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   };
   const labels: Record<string, string> = {
     rascunho: "Rascunho",
+    processando: "Processando",
     autorizada: "Autorizada",
     cancelada: "Cancelada",
     rejeitada: "Rejeitada",
+    erro_assinatura: "Erro Assinatura",
   };
   return (
     <Badge variant="secondary" className={variants[status] || ""}>
@@ -36,13 +49,41 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function StatusIcon({ status }: { status: string }) {
+  if (status === "autorizada") return <CheckCircle2 className="w-5 h-5 text-green-600" />;
+  if (status === "rejeitada" || status === "erro_assinatura") return <AlertCircle className="w-5 h-5 text-red-600" />;
+  if (status === "processando") return <Clock className="w-5 h-5 text-blue-600" />;
+  return <FileText className="w-5 h-5 text-muted-foreground" />;
+}
+
 export default function InvoiceDetail() {
   const [, params] = useRoute("/invoices/:id");
   const id = params?.id;
+  const { toast } = useToast();
+  const [ambiente, setAmbiente] = useState("2");
 
   const { data, isLoading } = useQuery<{ invoice: Invoice; items: InvoiceItem[] }>({
     queryKey: ["/api/invoices", id],
     enabled: !!id,
+  });
+
+  const emitirMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/invoices/${id}/emitir`, { ambiente });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", id] });
+      if (data.success) {
+        toast({ title: "NF-e emitida!", description: data.message });
+      } else {
+        toast({ title: "Falha", description: data.message, variant: "destructive" });
+      }
+    },
+    onError: (err: Error) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", id] });
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
   });
 
   if (isLoading) {
@@ -89,11 +130,95 @@ export default function InvoiceDetail() {
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => window.print()} data-testid="button-print">
-          <Printer className="w-4 h-4 mr-2" />
-          Imprimir
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => window.open(`/api/invoices/${id}/xml`, "_blank")}
+            data-testid="button-download-xml"
+          >
+            <FileCode className="w-4 h-4 mr-2" />
+            XML
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => window.open(`/api/invoices/${id}/danfe`, "_blank")}
+            data-testid="button-download-danfe"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            DANFE
+          </Button>
+          {(invoice.status === "rascunho" || invoice.status === "rejeitada" || invoice.status === "erro_assinatura") && (
+            <>
+              <Select value={ambiente} onValueChange={setAmbiente}>
+                <SelectTrigger className="w-[160px]" data-testid="select-ambiente">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">Homologação</SelectItem>
+                  <SelectItem value="1">Produção</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() => emitirMutation.mutate()}
+                disabled={emitirMutation.isPending}
+                data-testid="button-emitir"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {emitirMutation.isPending ? "Emitindo..." : "Emitir NF-e"}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+
+      {(invoice.chaveAcesso || invoice.protocolo || invoice.motivoRejeicao) && (
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-3">
+            <StatusIcon status={invoice.status} />
+            <CardTitle className="text-base">Informações da Emissão</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {invoice.chaveAcesso && (
+              <div>
+                <p className="text-xs text-muted-foreground">Chave de Acesso</p>
+                <p className="text-sm font-mono break-all" data-testid="text-chave-acesso">
+                  {invoice.chaveAcesso.replace(/(\d{4})/g, "$1 ").trim()}
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {invoice.protocolo && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Protocolo</p>
+                  <p className="text-sm font-mono font-medium" data-testid="text-protocolo">{invoice.protocolo}</p>
+                </div>
+              )}
+              {invoice.dhRecebimento && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Data/Hora Recebimento</p>
+                  <p className="text-sm font-mono">{invoice.dhRecebimento}</p>
+                </div>
+              )}
+              {invoice.codigoStatus && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Código Status</p>
+                  <p className="text-sm font-mono">{invoice.codigoStatus}</p>
+                </div>
+              )}
+            </div>
+            {invoice.motivoRejeicao && (
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-3">
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium">Motivo da Rejeição</p>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{invoice.motivoRejeicao}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-muted-foreground">Ambiente</p>
+              <p className="text-sm">{invoice.ambiente === "1" ? "Produção" : "Homologação"}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
@@ -223,7 +348,7 @@ export default function InvoiceDetail() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-semibold">Total da Nota</p>
-              <p className="text-lg font-mono font-bold text-primary">
+              <p className="text-lg font-mono font-bold" data-testid="text-total-nota">
                 R$ {parseFloat(invoice.totalNota).toFixed(2).replace(".", ",")}
               </p>
             </div>

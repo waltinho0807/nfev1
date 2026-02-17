@@ -9,6 +9,7 @@ import {
   insertInvoiceItemSchema,
 } from "@shared/schema";
 import { z } from "zod";
+import { emitirNfe, gerarDanfe, gerarXmlPreview } from "./services/nfe-service";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -191,6 +192,51 @@ export async function registerRoutes(
       const id = parseInt(req.params.id);
       await storage.deleteInvoice(id);
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ─── NF-e Emissão ─────────────────────────────────────────
+  app.post("/api/invoices/:id/emitir", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const ambiente = req.body.ambiente || "2";
+      const result = await emitirNfe(id, ambiente);
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  app.get("/api/invoices/:id/xml", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const invoice = await storage.getInvoice(id);
+      if (!invoice) return res.status(404).json({ message: "Nota não encontrada" });
+
+      const xml = invoice.xmlSigned || invoice.xmlContent;
+      if (!xml) {
+        const preview = await gerarXmlPreview(id, invoice.ambiente || "2");
+        return res.type("application/xml").send(preview.xml);
+      }
+      res.type("application/xml").send(xml);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/invoices/:id/danfe", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const pdf = await gerarDanfe(id);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `inline; filename=danfe_${id}.pdf`);
+      res.send(pdf);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

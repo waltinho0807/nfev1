@@ -14,7 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, FileText, Trash2, Eye, Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, FileText, Trash2, Eye, Search, Send, Download, FileCode } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import type { Invoice } from "@shared/schema";
@@ -22,15 +29,19 @@ import type { Invoice } from "@shared/schema";
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     rascunho: "",
+    processando: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     autorizada: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     cancelada: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     rejeitada: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    erro_assinatura: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   };
   const labels: Record<string, string> = {
     rascunho: "Rascunho",
+    processando: "Processando",
     autorizada: "Autorizada",
     cancelada: "Cancelada",
     rejeitada: "Rejeitada",
+    erro_assinatura: "Erro Assinatura",
   };
   return (
     <Badge variant="secondary" className={variants[status] || ""}>
@@ -57,6 +68,33 @@ export default function Invoices() {
       toast({ title: "Erro ao remover", description: err.message, variant: "destructive" });
     },
   });
+
+  const emitirMutation = useMutation({
+    mutationFn: async ({ id, ambiente }: { id: number; ambiente: string }) => {
+      const res = await apiRequest("POST", `/api/invoices/${id}/emitir`, { ambiente });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      if (data.success) {
+        toast({ title: "NF-e emitida com sucesso!", description: data.message });
+      } else {
+        toast({ title: "Falha na emissão", description: data.message, variant: "destructive" });
+      }
+    },
+    onError: (err: Error) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({ title: "Erro na emissão", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const downloadXml = (id: number) => {
+    window.open(`/api/invoices/${id}/xml`, "_blank");
+  };
+
+  const downloadDanfe = (id: number) => {
+    window.open(`/api/invoices/${id}/danfe`, "_blank");
+  };
 
   const filteredInvoices = (invoices || []).filter(
     (inv) =>
@@ -148,19 +186,51 @@ export default function Invoices() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {inv.status === "rascunho" && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => emitirMutation.mutate({ id: inv.id, ambiente: "2" })}
+                              disabled={emitirMutation.isPending}
+                              data-testid={`button-emitir-invoice-${inv.id}`}
+                              title="Emitir NF-e (Homologação)"
+                            >
+                              <Send className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => downloadXml(inv.id)}
+                            data-testid={`button-xml-invoice-${inv.id}`}
+                            title="Download XML"
+                          >
+                            <FileCode className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => downloadDanfe(inv.id)}
+                            data-testid={`button-danfe-invoice-${inv.id}`}
+                            title="Download DANFE PDF"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
                           <Link href={`/invoices/${inv.id}`}>
                             <Button size="icon" variant="ghost" data-testid={`button-view-invoice-${inv.id}`}>
                               <Eye className="w-4 h-4" />
                             </Button>
                           </Link>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => deleteMutation.mutate(inv.id)}
-                            data-testid={`button-delete-invoice-${inv.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {inv.status === "rascunho" && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => deleteMutation.mutate(inv.id)}
+                              data-testid={`button-delete-invoice-${inv.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
