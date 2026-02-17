@@ -115,6 +115,14 @@ export const invoices = pgTable("invoices", {
   status: text("status").notNull().default("rascunho"),
   chaveAcesso: text("chave_acesso"),
   protocolo: text("protocolo"),
+  ambiente: text("ambiente").default("2"),
+  xmlContent: text("xml_content"),
+  xmlSigned: text("xml_signed"),
+  xmlProtocolo: text("xml_protocolo"),
+  motivoRejeicao: text("motivo_rejeicao"),
+  recibo: text("recibo"),
+  dhRecebimento: text("dh_recebimento"),
+  codigoStatus: text("codigo_status"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
