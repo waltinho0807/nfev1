@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { seedDatabase } from "./seed";
 
 const app = express();
 const httpServer = createServer(app);
@@ -14,6 +15,7 @@ declare module "http" {
 
 app.use(
   express.json({
+    limit: "10mb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
@@ -60,6 +62,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await seedDatabase();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

@@ -1,0 +1,127 @@
+Nota fiscal
+Cancelar
+Salvar
+Tipo de Saída
+
+Emissão Própria
+Série 
+1
+Número  
+000001
+Loja
+
+Todas as lojas
+Unidade de negócio
+
+Nenhuma unidade
+Natureza de operação
+Bonificação
+Data de emissão
+11/02/2026
+Hora de emissão  
+18:39:18
+Data saída
+11/02/2026
+Hora saída 
+18:39:18
+Código do regime tributário
+
+Simples nacional
+Finalidade
+
+NF-e normal
+Indicador de presença
+
+0 - Não se aplica
+Destinatário
+Nome do contato
+Hebert Jhonatan Ferreira da Rocha
+Tipo da pessoa
+
+Física
+CPF 
+036.798.527-62
+Vendedor 
+
+Consumidor final
+CEP
+25943-557
+UF 
+RJ
+Município 
+Guapimirim
+Bairro 
+Parada Modelo
+Endereço 
+Rua Marcionílio Ignácio
+Número 
+26
+Complemento 
+Parada Modelo(Portão branco)
+Fone/FAX 
+(21) 9912-7007
+E-mail 
+Itens da nota fiscal
+Produto ou serviço	Código	UN	Qtde	Preço un	Preço total	NCM		
+BRAND Collection N 005	0002	1	1,00	59,00	59,00	3303.00.10		
+Perfume Feminino Brand Collection 007 Eau de Parfum	0003	1	1,00	59,00	59,00	3303.00.10		
+Adicionar outro item
+Cálculo de imposto
+Cálculo automático ligado
+Total dos Produtos (R$) 
+118,00
+Valor do Frete (R$) 
+0,00
+Valor do Seguro (R$) 
+0,00
+Outras Despesas (R$) 
+0,00
+Desconto (R$) 
+0,00
+Total da Nota (R$) 
+118,00
+Mostrar mais
+Retenções
+Transportador/Volumes
+Transporte
+
+Não haverá transporte
+Frete por conta
+
+0 - Contratação do Frete por conta do Remetente (CIF)
+Dados da transportadora
+Nome 
+Placa veículo 
+UF veículo 
+UF ...
+RNTC  
+CNPJ/CPF 
+Inscrição Estadual 
+UF 
+UF ...
+Município 
+Endereço da transportadora 
+Dados do volume
+Quantidade 
+1
+Peso Bruto  
+200,000
+Peso Líquido  
+200,000
+Numeração do volume 
+1
+Especie
+Volume(s)
+Marca  
+Pagamento
+Condição de pagamento  
+Gerar parcelas
+Categoria
+Sem categoria
+Pessoas autorizadas a acessar o XML da nota
+Informações adicionais
+Informações complementares 
+Informações complementares (natureza)  Naturezas de operação 
+Total aproximado de tributos: R$ 44,74 (37,92%)  Federais R$ 19,96 (16,91%)  Estaduais R$ 24,78 (21,00%) . Fonte IBPT.
+
+Informações adicionais de interesse do fisco (natureza)  Naturezas de operação
