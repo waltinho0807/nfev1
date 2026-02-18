@@ -21,7 +21,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileText, Send, Download, FileCode, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, FileText, Send, Download, FileCode, AlertCircle, CheckCircle2, Clock, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import type { Invoice, InvoiceItem } from "@shared/schema";
 
@@ -61,6 +71,7 @@ export default function InvoiceDetail() {
   const id = params?.id;
   const { toast } = useToast();
   const [ambiente, setAmbiente] = useState("2");
+  const [showConfirmProducao, setShowConfirmProducao] = useState(false);
 
   const { data, isLoading } = useQuery<{ invoice: Invoice; items: InvoiceItem[] }>({
     queryKey: ["/api/invoices", id],
@@ -150,21 +161,33 @@ export default function InvoiceDetail() {
           {(invoice.status === "rascunho" || invoice.status === "rejeitada" || invoice.status === "erro_assinatura") && (
             <>
               <Select value={ambiente} onValueChange={setAmbiente}>
-                <SelectTrigger className="w-[160px]" data-testid="select-ambiente">
+                <SelectTrigger className="w-[180px]" data-testid="select-ambiente">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="2">Homologação</SelectItem>
-                  <SelectItem value="1">Produção</SelectItem>
+                  <SelectItem value="2">Homologacao (Teste)</SelectItem>
+                  <SelectItem value="1">Producao (Real)</SelectItem>
                 </SelectContent>
               </Select>
+              {ambiente === "1" && (
+                <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 no-default-hover-elevate no-default-active-elevate">
+                  <ShieldAlert className="w-3 h-3 mr-1" />
+                  Producao
+                </Badge>
+              )}
               <Button
-                onClick={() => emitirMutation.mutate()}
+                onClick={() => {
+                  if (ambiente === "1") {
+                    setShowConfirmProducao(true);
+                  } else {
+                    emitirMutation.mutate();
+                  }
+                }}
                 disabled={emitirMutation.isPending}
                 data-testid="button-emitir"
               >
                 <Send className="w-4 h-4 mr-2" />
-                {emitirMutation.isPending ? "Emitindo..." : "Emitir NF-e"}
+                {emitirMutation.isPending ? "Emitindo..." : ambiente === "1" ? "Emitir em Producao" : "Emitir NF-e"}
               </Button>
             </>
           )}
@@ -366,6 +389,42 @@ export default function InvoiceDetail() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={showConfirmProducao} onOpenChange={setShowConfirmProducao}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-red-600" />
+              Emitir em Producao
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Voce esta prestes a emitir esta NF-e no ambiente de <strong>Producao</strong>. Isso ira registrar a nota fiscal de forma oficial na SEFAZ.
+              </span>
+              <span className="block">
+                Esta acao nao pode ser desfeita. Certifique-se de que todos os dados estao corretos antes de prosseguir.
+              </span>
+              <span className="block font-medium">
+                NF-e: {invoice.numero} - {invoice.destNome}
+              </span>
+              <span className="block font-medium">
+                Total: R$ {parseFloat(invoice.totalNota).toFixed(2).replace(".", ",")}
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-producao">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="button-confirm-producao"
+              onClick={() => emitirMutation.mutate()}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Confirmar Emissao em Producao
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
