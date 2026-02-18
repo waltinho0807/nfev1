@@ -57,6 +57,7 @@ export function extractCertificate(pfxBase64: string, password: string): Certifi
 export function signNfeXml(xml: string, certData: CertificateData): string {
   const sig = new SignedXml({
     privateKey: certData.privateKeyPem,
+    publicCert: certData.certificatePem,
     canonicalizationAlgorithm: "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
     signatureAlgorithm: "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
   });
@@ -75,16 +76,6 @@ export function signNfeXml(xml: string, certData: CertificateData): string {
     ],
     digestAlgorithm: "http://www.w3.org/2000/09/xmldsig#sha1",
   });
-
-  const certClean = certData.certificatePem
-    .replace(/-----BEGIN CERTIFICATE-----/g, "")
-    .replace(/-----END CERTIFICATE-----/g, "")
-    .replace(/\s/g, "");
-
-  sig.keyInfoProvider = {
-    getKeyInfo: () => `<X509Data><X509Certificate>${certClean}</X509Certificate></X509Data>`,
-    getKey: () => Buffer.from(certData.privateKeyPem),
-  };
 
   sig.computeSignature(xml, {
     location: { reference: `//*[@Id='${infNFeId}']`, action: "after" },

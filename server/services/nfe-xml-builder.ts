@@ -148,7 +148,7 @@ export function buildNfeXml(
   };
 
   if (isIeIsento) {
-    emitObj.IE = "";
+    emitObj.IE = "ISENTO";
   } else {
     emitObj.IE = ieClean;
   }
@@ -191,7 +191,7 @@ export function buildNfeXml(
           natOp: invoice.naturezaOperacao,
           mod: "55",
           serie: invoice.serie,
-          nNF: invoice.numero || "000001",
+          nNF: String(parseInt(invoice.numero || "1", 10)),
           dhEmi: dhEmi,
           dhSaiEnt: dhSaiEnt,
           tpNF: invoice.tipoSaida,
