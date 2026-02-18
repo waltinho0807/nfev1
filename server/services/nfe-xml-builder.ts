@@ -6,10 +6,14 @@ const builder = new XMLBuilder({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   format: true,
-  suppressEmptyNode: true,
+  suppressEmptyNode: false,
 });
 
 function cleanCpfCnpj(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+function cleanNCM(value: string): string {
   return value.replace(/\D/g, "");
 }
 
@@ -62,6 +66,16 @@ export function buildNfeXml(
   const destCpfCnpj = cleanCpfCnpj(invoice.destCpfCnpj);
   const isDestPJ = destCpfCnpj.length > 11;
 
+  const cMunEmit = emitter.codigoMunicipio ? emitter.codigoMunicipio.replace(/\D/g, "") : "";
+  if (!cMunEmit) {
+    console.warn("[NF-e XML] AVISO: Código do município do emitente não configurado. Configure no cadastro do emitente.");
+  }
+
+  const ieValue = emitter.inscricaoEstadual || "";
+  const ieUpper = ieValue.toUpperCase().trim();
+  const isIeIsento = ieUpper === "ISENTO" || ieUpper === "";
+  const ieClean = ieValue.replace(/\D/g, "");
+
   const detItems = items.map((item, index) => {
     const vProd = dec2(item.valorTotal);
     return {
@@ -69,8 +83,8 @@ export function buildNfeXml(
       prod: {
         cProd: item.codigo,
         cEAN: item.ean || "SEM GTIN",
-        xProd: item.descricao,
-        NCM: item.ncm,
+        xProd: ambiente === "2" ? "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL" : item.descricao,
+        NCM: cleanNCM(item.ncm),
         CFOP: item.cfop,
         uCom: item.unidade,
         qCom: dec4(item.quantidade),
@@ -112,6 +126,59 @@ export function buildNfeXml(
   const totalProd = dec2(invoice.totalProdutos);
   const totalNota = dec2(invoice.totalNota);
 
+  const emitObj: Record<string, any> = {
+    CNPJ: cnpjClean,
+    xNome: emitter.razaoSocial,
+  };
+  if (emitter.nomeFantasia) {
+    emitObj.xFant = emitter.nomeFantasia;
+  }
+  emitObj.enderEmit = {
+    xLgr: emitter.logradouro,
+    nro: emitter.numero,
+    ...(emitter.complemento ? { xCpl: emitter.complemento } : {}),
+    xBairro: emitter.bairro,
+    cMun: cMunEmit || "0000000",
+    xMun: emitter.municipio,
+    UF: emitter.uf,
+    CEP: emitter.cep.replace(/\D/g, ""),
+    cPais: "1058",
+    xPais: "BRASIL",
+    ...(emitter.telefone ? { fone: emitter.telefone.replace(/\D/g, "") } : {}),
+  };
+
+  if (isIeIsento) {
+    emitObj.IE = "";
+  } else {
+    emitObj.IE = ieClean;
+  }
+  emitObj.CRT = emitter.regimeTributario || "1";
+
+  const destObj: Record<string, any> = {};
+  if (isDestPJ) {
+    destObj.CNPJ = destCpfCnpj;
+  } else {
+    destObj.CPF = destCpfCnpj;
+  }
+  destObj.xNome = ambiente === "2" ? "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL" : invoice.destNome;
+  destObj.enderDest = {
+    xLgr: invoice.destLogradouro || "RUA NAO INFORMADA",
+    nro: invoice.destNumero || "S/N",
+    ...(invoice.destComplemento ? { xCpl: invoice.destComplemento } : {}),
+    xBairro: invoice.destBairro || "NAO INFORMADO",
+    cMun: cMunEmit || "0000000",
+    xMun: invoice.destMunicipio || "",
+    UF: invoice.destUf || emitter.uf,
+    CEP: (invoice.destCep || "").replace(/\D/g, ""),
+    cPais: "1058",
+    xPais: "BRASIL",
+    ...(invoice.destTelefone ? { fone: invoice.destTelefone.replace(/\D/g, "") } : {}),
+  };
+  destObj.indIEDest = "9";
+  if (invoice.destEmail) {
+    destObj.email = invoice.destEmail;
+  }
+
   const nfeData = {
     NFe: {
       "@_xmlns": "http://www.portalfiscal.inf.br/nfe",
@@ -129,7 +196,7 @@ export function buildNfeXml(
           dhSaiEnt: dhSaiEnt,
           tpNF: invoice.tipoSaida,
           idDest: "1",
-          cMunFG: emitter.codigoMunicipio || "3304557",
+          cMunFG: cMunEmit || "0000000",
           tpImp: "1",
           tpEmis: "1",
           cDV: chaveAcesso.slice(-1),
@@ -140,45 +207,8 @@ export function buildNfeXml(
           procEmi: "0",
           verProc: "NFe-System-1.0",
         },
-        emit: {
-          CNPJ: cnpjClean,
-          xNome: emitter.razaoSocial,
-          ...(emitter.nomeFantasia ? { xFant: emitter.nomeFantasia } : {}),
-          enderEmit: {
-            xLgr: emitter.logradouro,
-            nro: emitter.numero,
-            ...(emitter.complemento ? { xCpl: emitter.complemento } : {}),
-            xBairro: emitter.bairro,
-            cMun: emitter.codigoMunicipio || "3304557",
-            xMun: emitter.municipio,
-            UF: emitter.uf,
-            CEP: emitter.cep.replace(/\D/g, ""),
-            cPais: "1058",
-            xPais: "BRASIL",
-            ...(emitter.telefone ? { fone: emitter.telefone.replace(/\D/g, "") } : {}),
-          },
-          ...(emitter.inscricaoEstadual ? { IE: emitter.inscricaoEstadual.replace(/\D/g, "") } : {}),
-          CRT: emitter.regimeTributario || "1",
-        },
-        dest: {
-          ...(isDestPJ ? { CNPJ: destCpfCnpj } : { CPF: destCpfCnpj }),
-          xNome: invoice.destNome,
-          enderDest: {
-            xLgr: invoice.destLogradouro || "",
-            nro: invoice.destNumero || "S/N",
-            ...(invoice.destComplemento ? { xCpl: invoice.destComplemento } : {}),
-            xBairro: invoice.destBairro || "",
-            cMun: "3304557",
-            xMun: invoice.destMunicipio || "",
-            UF: invoice.destUf || emitter.uf,
-            CEP: (invoice.destCep || "").replace(/\D/g, ""),
-            cPais: "1058",
-            xPais: "BRASIL",
-            ...(invoice.destTelefone ? { fone: invoice.destTelefone.replace(/\D/g, "") } : {}),
-          },
-          indIEDest: "9",
-          ...(invoice.destEmail ? { email: invoice.destEmail } : {}),
-        },
+        emit: emitObj,
+        dest: destObj,
         det: detItems,
         total: {
           ICMSTot: {

@@ -87,7 +87,7 @@ export function signNfeXml(xml: string, certData: CertificateData): string {
   };
 
   sig.computeSignature(xml, {
-    location: { reference: `//*[@Id='${infNFeId}']`, action: "append" },
+    location: { reference: `//*[@Id='${infNFeId}']`, action: "after" },
   });
 
   return sig.getSignedXml();
