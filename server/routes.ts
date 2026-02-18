@@ -118,6 +118,10 @@ export async function registerRoutes(
   app.post("/api/certificates", async (req, res) => {
     try {
       const parsed = insertCertificateSchema.parse(req.body);
+      const existing = await storage.getCertificates();
+      for (const old of existing) {
+        await storage.deleteCertificate(old.id);
+      }
       const cert = await storage.createCertificate(parsed);
       res.json({ ...cert, certificateBase64: "***", password: "***" });
     } catch (err: any) {

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ShieldCheck, Upload, Trash2, Eye, EyeOff } from "lucide-react";
+import { ShieldCheck, Upload, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import type { Certificate, InsertCertificate } from "@shared/schema";
 
 export default function CertificatePage() {
@@ -25,13 +25,15 @@ export default function CertificatePage() {
     queryKey: ["/api/certificates"],
   });
 
+  const activeCert = certificates?.[0];
+
   const uploadMutation = useMutation({
     mutationFn: (data: Partial<InsertCertificate>) =>
       apiRequest("POST", "/api/certificates", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/certificates"] });
       setForm({ name: "", certificateBase64: "", password: "", userId: 1 });
-      toast({ title: "Certificado salvo com sucesso" });
+      toast({ title: activeCert ? "Certificado substituído com sucesso" : "Certificado salvo com sucesso" });
     },
     onError: (err: Error) => {
       toast({ title: "Erro ao salvar certificado", description: err.message, variant: "destructive" });
@@ -52,7 +54,7 @@ export default function CertificatePage() {
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = (reader.result as string).split(",")[1] || (reader.result as string);
-      setForm({ ...form, certificateBase64: base64, name: form.name || file.name });
+      setForm({ ...form, certificateBase64: base64, name: form.name || file.name.replace(/\.(pfx|p12)$/i, "") });
     };
     reader.readAsDataURL(file);
   }
@@ -71,18 +73,64 @@ export default function CertificatePage() {
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-certificate-title">Certificado Digital A1</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Gerencie seu certificado digital para assinatura das NF-e
+          Gerencie seu certificado digital para assinatura das NF-e. Apenas um certificado pode estar ativo.
         </p>
       </div>
+
+      {activeCert && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-green-600" />
+              Certificado Ativo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="flex items-center justify-between gap-3 p-4 rounded-md bg-muted/30"
+              data-testid={`cert-row-${activeCert.id}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-md bg-green-500/10">
+                  <ShieldCheck className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{activeCert.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      Ativo
+                    </Badge>
+                    {activeCert.expiresAt && (
+                      <span className="text-xs text-muted-foreground">
+                        Validade: {activeCert.expiresAt}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => deleteMutation.mutate(activeCert.id)}
+                data-testid={`button-delete-cert-${activeCert.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Enviar Certificado
+            {activeCert ? <RefreshCw className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+            {activeCert ? "Substituir Certificado" : "Enviar Certificado"}
           </CardTitle>
           <CardDescription>
-            Faça upload do arquivo .pfx ou cole o conteúdo em Base64
+            {activeCert
+              ? "Envie um novo certificado para substituir o atual. O anterior será removido automaticamente."
+              : "Faça upload do arquivo .pfx ou cole o conteúdo em Base64"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -149,72 +197,15 @@ export default function CertificatePage() {
             </div>
             <div className="flex justify-end">
               <Button type="submit" disabled={uploadMutation.isPending} data-testid="button-save-cert">
-                <ShieldCheck className="w-4 h-4 mr-2" />
-                {uploadMutation.isPending ? "Salvando..." : "Salvar Certificado"}
+                {activeCert ? <RefreshCw className="w-4 h-4 mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+                {uploadMutation.isPending
+                  ? "Salvando..."
+                  : activeCert
+                    ? "Substituir Certificado"
+                    : "Salvar Certificado"}
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Certificados Cadastrados</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="animate-pulse space-y-3">
-              {[1, 2].map((i) => (
-                <div key={i} className="h-16 bg-muted rounded" />
-              ))}
-            </div>
-          ) : !certificates?.length ? (
-            <div className="text-center py-8">
-              <ShieldCheck className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-              <p className="text-sm text-muted-foreground">Nenhum certificado cadastrado</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {certificates.map((cert) => (
-                <div
-                  key={cert.id}
-                  className="flex items-center justify-between gap-3 p-4 rounded-md bg-muted/30"
-                  data-testid={`cert-row-${cert.id}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10">
-                      <ShieldCheck className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{cert.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {cert.active ? (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            Ativo
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">Inativo</Badge>
-                        )}
-                        {cert.expiresAt && (
-                          <span className="text-xs text-muted-foreground">
-                            Validade: {cert.expiresAt}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => deleteMutation.mutate(cert.id)}
-                    data-testid={`button-delete-cert-${cert.id}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

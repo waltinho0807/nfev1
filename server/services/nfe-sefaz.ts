@@ -1,7 +1,7 @@
 import https from "https";
 import { XMLParser } from "fast-xml-parser";
 import type { CertificateData } from "./nfe-signer";
-import * as forge from "node-forge";
+import forge from "node-forge";
 
 const parser = new XMLParser({
   ignoreAttributes: false,

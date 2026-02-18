@@ -1,4 +1,4 @@
-import * as forge from "node-forge";
+import forge from "node-forge";
 import { SignedXml } from "xml-crypto";
 
 export interface CertificateData {
@@ -10,7 +10,8 @@ export interface CertificateData {
 }
 
 export function extractCertificate(pfxBase64: string, password: string): CertificateData {
-  const pfxDer = forge.util.decode64(pfxBase64);
+  const pfxBuffer = Buffer.from(pfxBase64, "base64");
+  const pfxDer = pfxBuffer.toString("binary");
   const pfxAsn1 = forge.asn1.fromDer(pfxDer);
   const p12 = forge.pkcs12.pkcs12FromAsn1(pfxAsn1, password);
 
