@@ -239,6 +239,12 @@ export function buildNfeXml(
         transp: {
           modFrete: invoice.modalidadeFrete || "9",
         },
+        pag: {
+          detPag: {
+            tPag: "01",
+            vPag: totalNota,
+          },
+        },
         ...(invoice.informacoesComplementares ? {
           infAdic: {
             infCpl: invoice.informacoesComplementares,
