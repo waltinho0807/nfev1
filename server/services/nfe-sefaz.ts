@@ -150,11 +150,16 @@ function buildSoapEnvelope(xmlContent: string, service: string): string {
 </soap12:Envelope>`;
 }
 
+function stripXmlDeclaration(xml: string): string {
+  return xml.replace(/<\?xml[^?]*\?>\s*/gi, "").trim();
+}
+
 function buildEnviNFe(xmlSigned: string, idLote: string): string {
+  const cleanXml = stripXmlDeclaration(xmlSigned);
   return `<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
   <idLote>${idLote}</idLote>
   <indSinc>1</indSinc>
-  ${xmlSigned}
+  ${cleanXml}
 </enviNFe>`;
 }
 
