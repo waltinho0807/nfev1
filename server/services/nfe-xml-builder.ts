@@ -161,12 +161,16 @@ export function buildNfeXml(
     destObj.CPF = destCpfCnpj;
   }
   destObj.xNome = ambiente === "2" ? "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL" : invoice.destNome;
+  const cMunDest = invoice.destCodigoMunicipio ? invoice.destCodigoMunicipio.replace(/\D/g, "") : cMunEmit;
+  if (!cMunDest) {
+    console.warn("[NF-e XML] AVISO: Código do município do destinatário não configurado.");
+  }
   destObj.enderDest = {
     xLgr: invoice.destLogradouro || "RUA NAO INFORMADA",
     nro: invoice.destNumero || "S/N",
     ...(invoice.destComplemento ? { xCpl: invoice.destComplemento } : {}),
     xBairro: invoice.destBairro || "NAO INFORMADO",
-    cMun: cMunEmit || "0000000",
+    cMun: cMunDest || "0000000",
     xMun: invoice.destMunicipio || "",
     UF: invoice.destUf || emitter.uf,
     CEP: (invoice.destCep || "").replace(/\D/g, ""),

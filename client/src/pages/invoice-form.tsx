@@ -95,6 +95,7 @@ export default function InvoiceForm() {
     destCep: "",
     destUf: "",
     destMunicipio: "",
+    destCodigoMunicipio: "",
     destBairro: "",
     destLogradouro: "",
     destNumero: "",
@@ -446,6 +447,10 @@ export default function InvoiceForm() {
               <div className="space-y-2">
                 <Label>Município</Label>
                 <Input value={form.destMunicipio || ""} onChange={(e) => setForm({ ...form, destMunicipio: e.target.value })} placeholder="Município" data-testid="input-dest-municipio" />
+              </div>
+              <div className="space-y-2">
+                <Label>Cód. IBGE Município</Label>
+                <Input value={form.destCodigoMunicipio || ""} onChange={(e) => setForm({ ...form, destCodigoMunicipio: e.target.value.replace(/\D/g, "").slice(0, 7) })} placeholder="0000000" maxLength={7} data-testid="input-dest-codigo-municipio" />
               </div>
               <div className="space-y-2">
                 <Label>Bairro</Label>

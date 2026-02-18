@@ -97,6 +97,7 @@ export const invoices = pgTable("invoices", {
   destCep: text("dest_cep"),
   destUf: text("dest_uf"),
   destMunicipio: text("dest_municipio"),
+  destCodigoMunicipio: text("dest_codigo_municipio"),
   destBairro: text("dest_bairro"),
   destLogradouro: text("dest_logradouro"),
   destNumero: text("dest_numero"),
