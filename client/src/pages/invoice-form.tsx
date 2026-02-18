@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Save, X, Plus, Trash2, FileText } from "lucide-react";
+import { maskCnpj, maskCpf, maskCep, maskPhone } from "@/lib/masks";
 import type { Product, Emitter, InsertInvoice, InsertInvoiceItem } from "@shared/schema";
 
 const ufOptions = [
@@ -408,7 +409,13 @@ export default function InvoiceForm() {
               </div>
               <div className="space-y-2">
                 <Label>{form.destTipoPessoa === "J" ? "CNPJ *" : "CPF *"}</Label>
-                <Input value={form.destCpfCnpj || ""} onChange={(e) => setForm({ ...form, destCpfCnpj: e.target.value })} placeholder={form.destTipoPessoa === "J" ? "00.000.000/0000-00" : "000.000.000-00"} data-testid="input-dest-cpf-cnpj" />
+                <Input
+                  value={form.destCpfCnpj || ""}
+                  onChange={(e) => setForm({ ...form, destCpfCnpj: form.destTipoPessoa === "J" ? maskCnpj(e.target.value) : maskCpf(e.target.value) })}
+                  placeholder={form.destTipoPessoa === "J" ? "00.000.000/0000-00" : "000.000.000-00"}
+                  maxLength={form.destTipoPessoa === "J" ? 18 : 14}
+                  data-testid="input-dest-cpf-cnpj"
+                />
               </div>
               {form.destTipoPessoa === "J" && (
                 <div className="space-y-2">
@@ -421,7 +428,7 @@ export default function InvoiceForm() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>CEP</Label>
-                <Input value={form.destCep || ""} onChange={(e) => setForm({ ...form, destCep: e.target.value })} placeholder="00000-000" data-testid="input-dest-cep" />
+                <Input value={form.destCep || ""} onChange={(e) => setForm({ ...form, destCep: maskCep(e.target.value) })} placeholder="00000-000" maxLength={9} data-testid="input-dest-cep" />
               </div>
               <div className="space-y-2">
                 <Label>UF</Label>
@@ -458,7 +465,7 @@ export default function InvoiceForm() {
               </div>
               <div className="space-y-2">
                 <Label>Telefone</Label>
-                <Input value={form.destTelefone || ""} onChange={(e) => setForm({ ...form, destTelefone: e.target.value })} placeholder="(00) 00000-0000" data-testid="input-dest-telefone" />
+                <Input value={form.destTelefone || ""} onChange={(e) => setForm({ ...form, destTelefone: maskPhone(e.target.value) })} placeholder="(00) 00000-0000" maxLength={15} data-testid="input-dest-telefone" />
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>

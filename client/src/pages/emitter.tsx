@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Building2, Save } from "lucide-react";
+import { maskCnpj, maskCep, maskPhone } from "@/lib/masks";
 import type { Emitter, InsertEmitter } from "@shared/schema";
 
 const ufOptions = [
@@ -58,18 +59,18 @@ export default function EmitterPage() {
       setForm({
         razaoSocial: emitter.razaoSocial,
         nomeFantasia: emitter.nomeFantasia || "",
-        cnpj: emitter.cnpj,
+        cnpj: maskCnpj(emitter.cnpj),
         inscricaoEstadual: emitter.inscricaoEstadual || "",
         inscricaoMunicipal: emitter.inscricaoMunicipal || "",
         regimeTributario: emitter.regimeTributario,
-        cep: emitter.cep,
+        cep: maskCep(emitter.cep),
         uf: emitter.uf,
         municipio: emitter.municipio,
         bairro: emitter.bairro,
         logradouro: emitter.logradouro,
         numero: emitter.numero,
         complemento: emitter.complemento || "",
-        telefone: emitter.telefone || "",
+        telefone: maskPhone(emitter.telefone || ""),
         email: emitter.email || "",
         codigoMunicipio: emitter.codigoMunicipio || "",
       });
@@ -150,8 +151,9 @@ export default function EmitterPage() {
                 <Label>CNPJ *</Label>
                 <Input
                   value={form.cnpj || ""}
-                  onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
+                  onChange={(e) => setForm({ ...form, cnpj: maskCnpj(e.target.value) })}
                   placeholder="00.000.000/0000-00"
+                  maxLength={18}
                   data-testid="input-emitter-cnpj"
                 />
               </div>
@@ -198,8 +200,9 @@ export default function EmitterPage() {
                   <Label>CEP *</Label>
                   <Input
                     value={form.cep || ""}
-                    onChange={(e) => setForm({ ...form, cep: e.target.value })}
+                    onChange={(e) => setForm({ ...form, cep: maskCep(e.target.value) })}
                     placeholder="00000-000"
+                    maxLength={9}
                     data-testid="input-emitter-cep"
                   />
                 </div>
@@ -283,8 +286,9 @@ export default function EmitterPage() {
                   <Label>Telefone</Label>
                   <Input
                     value={form.telefone || ""}
-                    onChange={(e) => setForm({ ...form, telefone: e.target.value })}
-                    placeholder="(00) 0000-0000"
+                    onChange={(e) => setForm({ ...form, telefone: maskPhone(e.target.value) })}
+                    placeholder="(00) 00000-0000"
+                    maxLength={15}
                     data-testid="input-emitter-telefone"
                   />
                 </div>
