@@ -9,6 +9,12 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   email: text("email"),
+  cnpj: text("cnpj"),
+  phone: text("phone"),
+  subscriptionStatus: text("subscription_status").notNull().default("inactive"),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  abacateCustomerId: text("abacate_customer_id"),
+  abacateBillingId: text("abacate_billing_id"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
@@ -31,6 +37,7 @@ export type Certificate = typeof certificates.$inferSelect;
 
 export const emitters = pgTable("emitters", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().default(0),
   razaoSocial: text("razao_social").notNull(),
   nomeFantasia: text("nome_fantasia"),
   cnpj: text("cnpj").notNull(),
@@ -55,6 +62,7 @@ export type Emitter = typeof emitters.$inferSelect;
 
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().default(0),
   codigo: text("codigo").notNull(),
   descricao: text("descricao").notNull(),
   ncm: text("ncm").notNull(),
@@ -80,6 +88,7 @@ export type Product = typeof products.$inferSelect;
 
 export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().default(0),
   numero: text("numero"),
   serie: text("serie").notNull().default("1"),
   naturezaOperacao: text("natureza_operacao").notNull(),

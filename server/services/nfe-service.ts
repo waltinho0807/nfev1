@@ -25,7 +25,8 @@ export async function emitirNfe(
     return { success: false, message: "Esta nota já foi autorizada" };
   }
 
-  const emitter = await storage.getEmitter();
+  const userId = invoice.userId;
+  const emitter = await storage.getEmitter(userId);
   if (!emitter) {
     return { success: false, message: "Dados do emitente não configurados" };
   }
@@ -35,7 +36,7 @@ export async function emitirNfe(
     return { success: false, message: "A nota fiscal não possui itens" };
   }
 
-  const certs = await storage.getCertificates();
+  const certs = await storage.getCertificates(userId);
   const activeCert = certs.find((c) => c.active);
   if (!activeCert) {
     return { success: false, message: "Nenhum certificado A1 ativo encontrado" };
@@ -156,7 +157,8 @@ export async function gerarDanfe(invoiceId: number): Promise<Buffer> {
   const invoice = await storage.getInvoice(invoiceId);
   if (!invoice) throw new Error("Nota fiscal não encontrada");
 
-  const emitter = await storage.getEmitter();
+  const userId = invoice.userId;
+  const emitter = await storage.getEmitter(userId);
   if (!emitter) throw new Error("Dados do emitente não configurados");
 
   const items = await storage.getInvoiceItems(invoiceId);
@@ -167,7 +169,8 @@ export async function gerarXmlPreview(invoiceId: number, ambiente: string = "2")
   const invoice = await storage.getInvoice(invoiceId);
   if (!invoice) throw new Error("Nota fiscal não encontrada");
 
-  const emitter = await storage.getEmitter();
+  const userId = invoice.userId;
+  const emitter = await storage.getEmitter(userId);
   if (!emitter) throw new Error("Dados do emitente não configurados");
 
   const items = await storage.getInvoiceItems(invoiceId);

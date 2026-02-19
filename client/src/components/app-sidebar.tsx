@@ -5,8 +5,13 @@ import {
   ShieldCheck,
   FileText,
   Plus,
+  CreditCard,
+  LogOut,
+  User,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
+import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -20,17 +25,29 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 
-const menuItems = [
+const fullMenuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Nova NF-e", url: "/invoices/new", icon: Plus },
   { title: "Notas Fiscais", url: "/invoices", icon: FileText },
   { title: "Produtos", url: "/products", icon: Package },
   { title: "Emitente", url: "/emitter", icon: Building2 },
   { title: "Certificado A1", url: "/certificate", icon: ShieldCheck },
+  { title: "Assinatura", url: "/checkout", icon: CreditCard },
 ];
 
-export function AppSidebar() {
+const limitedMenuItems = [
+  { title: "Assinatura", url: "/checkout", icon: CreditCard },
+];
+
+interface AppSidebarProps {
+  subscriptionActive?: boolean;
+}
+
+export function AppSidebar({ subscriptionActive = true }: AppSidebarProps) {
   const [location] = useLocation();
+  const { user, logoutMutation } = useAuth();
+
+  const menuItems = subscriptionActive ? fullMenuItems : limitedMenuItems;
 
   return (
     <Sidebar>
@@ -67,8 +84,24 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
-        <p className="text-xs text-muted-foreground">v1.0.0</p>
+      <SidebarFooter className="p-4 space-y-2">
+        {user && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <User className="w-3 h-3" />
+            <span className="truncate">{user.name}</span>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start"
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+          data-testid="button-logout"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sair
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
