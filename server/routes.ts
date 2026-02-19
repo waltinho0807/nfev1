@@ -219,6 +219,10 @@ export async function registerRoutes(
 
       const baseUrl = `${req.protocol}://${req.get("host")}`;
 
+      const phoneDigits = (user.phone || "").replace(/\D/g, "");
+      const cellphone = phoneDigits.length >= 10 ? `+55${phoneDigits}` : "+5500000000000";
+      const taxIdClean = (user.cnpj || "").replace(/\D/g, "");
+
       const billingData: any = {
         frequency: "ONE_TIME",
         methods: ["PIX"],
@@ -236,8 +240,8 @@ export async function registerRoutes(
         customer: {
           name: user.name,
           email: user.email || `${user.username}@nfe.local`,
-          cellphone: user.phone || "(00) 00000-0000",
-          taxId: user.cnpj || "00000000000",
+          cellphone: cellphone,
+          taxId: taxIdClean || "00000000000",
         },
         metadata: {
           userId: String(user.id),
