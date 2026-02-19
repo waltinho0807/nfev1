@@ -16,7 +16,7 @@ export async function emitirNfe(
   invoiceId: number,
   ambiente: string = "2"
 ): Promise<EmitirResult> {
-  const invoice = await storage.getInvoice(invoiceId);
+  const invoice = await storage.getInvoiceById(invoiceId);
   if (!invoice) {
     return { success: false, message: "Nota fiscal não encontrada" };
   }
@@ -154,7 +154,7 @@ export async function emitirNfe(
 }
 
 export async function gerarDanfe(invoiceId: number): Promise<Buffer> {
-  const invoice = await storage.getInvoice(invoiceId);
+  const invoice = await storage.getInvoiceById(invoiceId);
   if (!invoice) throw new Error("Nota fiscal não encontrada");
 
   const userId = invoice.userId;
@@ -166,7 +166,7 @@ export async function gerarDanfe(invoiceId: number): Promise<Buffer> {
 }
 
 export async function gerarXmlPreview(invoiceId: number, ambiente: string = "2"): Promise<{ xml: string; chaveAcesso: string }> {
-  const invoice = await storage.getInvoice(invoiceId);
+  const invoice = await storage.getInvoiceById(invoiceId);
   if (!invoice) throw new Error("Nota fiscal não encontrada");
 
   const userId = invoice.userId;
