@@ -191,6 +191,50 @@ export async function registerRoutes(
     }
   });
 
+  app.put("/api/invoices/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getInvoice(id);
+      if (!existing) return res.status(404).json({ message: "Nota não encontrada" });
+      if (existing.status === "autorizada" || existing.status === "processando") {
+        return res.status(400).json({ message: "Nota autorizada ou em processamento não pode ser editada" });
+      }
+
+      const { invoice: invoiceData, items } = req.body;
+      if (!invoiceData || !items || !Array.isArray(items)) {
+        return res.status(400).json({ message: "Dados da nota e itens são obrigatórios" });
+      }
+
+      const updated = await storage.updateInvoice(id, {
+        ...invoiceData,
+        numero: existing.numero,
+        serie: invoiceData.serie || existing.serie,
+        status: "rascunho",
+        motivoRejeicao: null,
+        codigoStatus: null,
+        xmlContent: null,
+        xmlSigned: null,
+        xmlProtocolo: null,
+        chaveAcesso: null,
+        protocolo: null,
+        recibo: null,
+        dhRecebimento: null,
+      });
+
+      await storage.deleteInvoiceItems(id);
+      for (const item of items) {
+        await storage.createInvoiceItem({
+          ...item,
+          invoiceId: id,
+        });
+      }
+
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.delete("/api/invoices/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

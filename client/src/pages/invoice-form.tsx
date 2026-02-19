@@ -24,9 +24,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Save, X, Plus, Trash2, FileText } from "lucide-react";
 import { maskCnpj, maskCpf, maskCep, maskPhone } from "@/lib/masks";
-import type { Product, Emitter, InsertInvoice, InsertInvoiceItem } from "@shared/schema";
+import { useRoute } from "wouter";
+import type { Product, Emitter, Invoice, InvoiceItem, InsertInvoice, InsertInvoiceItem } from "@shared/schema";
 
 const ufOptions = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS",
@@ -71,6 +73,9 @@ export default function InvoiceForm() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { date: nowDate, time: nowTime } = getNow();
+  const [matched, params] = useRoute("/invoices/:id/edit");
+  const editId = matched ? params?.id : null;
+  const isEdit = !!editId;
 
   const { data: emitter } = useQuery<Emitter | null>({
     queryKey: ["/api/emitter"],
@@ -78,6 +83,13 @@ export default function InvoiceForm() {
   const { data: products } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
+
+  const { data: existingData, isLoading: loadingExisting } = useQuery<{ invoice: Invoice; items: InvoiceItem[] }>({
+    queryKey: ["/api/invoices", editId],
+    enabled: isEdit,
+  });
+
+  const [formLoaded, setFormLoaded] = useState(false);
 
   const [form, setForm] = useState<Partial<InsertInvoice>>({
     serie: "1",
@@ -113,6 +125,62 @@ export default function InvoiceForm() {
   });
 
   const [items, setItems] = useState<InvoiceItemForm[]>([]);
+
+  useEffect(() => {
+    if (isEdit && existingData && !formLoaded) {
+      const inv = existingData.invoice;
+      setForm({
+        serie: inv.serie,
+        naturezaOperacao: inv.naturezaOperacao,
+        tipoSaida: inv.tipoSaida,
+        finalidade: inv.finalidade,
+        indicadorPresenca: inv.indicadorPresenca,
+        dataEmissao: inv.dataEmissao,
+        horaEmissao: inv.horaEmissao,
+        dataSaida: inv.dataSaida || "",
+        horaSaida: inv.horaSaida || "",
+        destNome: inv.destNome,
+        destTipoPessoa: inv.destTipoPessoa,
+        destCpfCnpj: inv.destCpfCnpj,
+        destInscricaoEstadual: inv.destInscricaoEstadual || "",
+        destCep: inv.destCep || "",
+        destUf: inv.destUf || "",
+        destMunicipio: inv.destMunicipio || "",
+        destCodigoMunicipio: inv.destCodigoMunicipio || "",
+        destBairro: inv.destBairro || "",
+        destLogradouro: inv.destLogradouro || "",
+        destNumero: inv.destNumero || "",
+        destComplemento: inv.destComplemento || "",
+        destTelefone: inv.destTelefone || "",
+        destEmail: inv.destEmail || "",
+        consumidorFinal: inv.consumidorFinal ?? true,
+        valorFrete: inv.valorFrete || "0",
+        valorSeguro: inv.valorSeguro || "0",
+        outrasDespesas: inv.outrasDespesas || "0",
+        desconto: inv.desconto || "0",
+        modalidadeFrete: inv.modalidadeFrete || "9",
+        informacoesComplementares: inv.informacoesComplementares || "",
+        status: "rascunho",
+      });
+      setItems(existingData.items.map((item) => ({
+        productId: item.productId,
+        descricao: item.descricao,
+        codigo: item.codigo,
+        ncm: item.ncm,
+        cfop: item.cfop,
+        unidade: item.unidade,
+        quantidade: item.quantidade,
+        valorUnitario: item.valorUnitario,
+        valorTotal: item.valorTotal,
+        ean: item.ean || "SEM GTIN",
+        origem: item.origem || "0",
+        csosn: item.csosn || "102",
+        cstPis: item.cstPis || "49",
+        cstCofins: item.cstCofins || "49",
+      })));
+      setFormLoaded(true);
+    }
+  }, [isEdit, existingData, formLoaded]);
 
   const totals = useMemo(() => {
     const totalProdutos = items.reduce((sum, item) => {
@@ -190,13 +258,21 @@ export default function InvoiceForm() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: { invoice: Partial<InsertInvoice>; items: InvoiceItemForm[] }) => {
-      const res = await apiRequest("POST", "/api/invoices", data);
-      return res.json();
+      if (isEdit) {
+        const res = await apiRequest("PUT", `/api/invoices/${editId}`, data);
+        return res.json();
+      } else {
+        const res = await apiRequest("POST", "/api/invoices", data);
+        return res.json();
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      toast({ title: "Nota fiscal salva com sucesso" });
-      navigate("/invoices");
+      if (isEdit) {
+        queryClient.invalidateQueries({ queryKey: ["/api/invoices", editId] });
+      }
+      toast({ title: isEdit ? "Nota fiscal atualizada com sucesso" : "Nota fiscal salva com sucesso" });
+      navigate(isEdit ? `/invoices/${editId}` : "/invoices");
     },
     onError: (err: Error) => {
       toast({ title: "Erro ao salvar nota", description: err.message, variant: "destructive" });
@@ -223,12 +299,21 @@ export default function InvoiceForm() {
     });
   }
 
+  if (isEdit && loadingExisting) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-invoice-form-title">Nova Nota Fiscal</h1>
-          <p className="text-muted-foreground text-sm mt-1">NF-e Modelo 55</p>
+          <h1 className="text-2xl font-bold" data-testid="text-invoice-form-title">{isEdit ? "Editar Nota Fiscal" : "Nova Nota Fiscal"}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{isEdit ? `Editando NF-e ${existingData?.invoice.numero || ""}` : "NF-e Modelo 55"}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => navigate("/invoices")} data-testid="button-cancel-invoice">

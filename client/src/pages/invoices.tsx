@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, FileText, Trash2, Eye, Search, Send, Download, FileCode } from "lucide-react";
+import { Plus, FileText, Trash2, Eye, Search, Send, Download, FileCode, Pencil } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import type { Invoice } from "@shared/schema";
@@ -216,12 +216,24 @@ export default function Invoices() {
                           >
                             <Download className="w-4 h-4" />
                           </Button>
+                          {(inv.status === "rejeitada" || inv.status === "erro_assinatura" || inv.status === "rascunho") && (
+                            <Link href={`/invoices/${inv.id}/edit`}>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                data-testid={`button-edit-invoice-${inv.id}`}
+                                title="Editar nota"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                          )}
                           <Link href={`/invoices/${inv.id}`}>
                             <Button size="icon" variant="ghost" data-testid={`button-view-invoice-${inv.id}`}>
                               <Eye className="w-4 h-4" />
                             </Button>
                           </Link>
-                          {inv.status === "rascunho" && (
+                          {(inv.status === "rascunho" || inv.status === "rejeitada" || inv.status === "erro_assinatura") && (
                             <Button
                               size="icon"
                               variant="ghost"

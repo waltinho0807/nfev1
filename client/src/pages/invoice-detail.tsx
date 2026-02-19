@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, FileText, Send, Download, FileCode, AlertCircle, CheckCircle2, Clock, ShieldAlert } from "lucide-react";
+import { ArrowLeft, FileText, Send, Download, FileCode, AlertCircle, CheckCircle2, Clock, ShieldAlert, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { Invoice, InvoiceItem } from "@shared/schema";
 
@@ -142,6 +142,14 @@ export default function InvoiceDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {(invoice.status === "rascunho" || invoice.status === "rejeitada" || invoice.status === "erro_assinatura") && (
+            <Link href={`/invoices/${id}/edit`}>
+              <Button variant="outline" data-testid="button-edit-invoice">
+                <Pencil className="w-4 h-4 mr-2" />
+                Editar
+              </Button>
+            </Link>
+          )}
           <Button
             variant="outline"
             onClick={() => window.open(`/api/invoices/${id}/xml`, "_blank")}

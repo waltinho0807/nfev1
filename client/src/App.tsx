@@ -24,6 +24,7 @@ function Router() {
       <Route path="/emitter" component={EmitterPage} />
       <Route path="/certificate" component={CertificatePage} />
       <Route path="/invoices/new" component={InvoiceForm} />
+      <Route path="/invoices/:id/edit" component={InvoiceForm} />
       <Route path="/invoices/:id" component={InvoiceDetail} />
       <Route path="/invoices" component={Invoices} />
       <Route component={NotFound} />
