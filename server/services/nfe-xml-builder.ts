@@ -17,6 +17,11 @@ function cleanNCM(value: string): string {
   return value.replace(/\D/g, "");
 }
 
+function cleanCep(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  return digits.padStart(8, "0").slice(0, 8);
+}
+
 function formatDateTime(date: string, hora: string): string {
   const { year, month, day } = parseDate(date);
   return `${year}-${month}-${day}T${hora}-03:00`;
@@ -141,7 +146,7 @@ export function buildNfeXml(
     cMun: cMunEmit || "0000000",
     xMun: emitter.municipio,
     UF: emitter.uf,
-    CEP: emitter.cep.replace(/\D/g, ""),
+    CEP: cleanCep(emitter.cep),
     cPais: "1058",
     xPais: "BRASIL",
     ...(emitter.telefone ? { fone: emitter.telefone.replace(/\D/g, "") } : {}),
@@ -173,7 +178,7 @@ export function buildNfeXml(
     cMun: cMunDest || "0000000",
     xMun: invoice.destMunicipio || "",
     UF: invoice.destUf || emitter.uf,
-    CEP: (invoice.destCep || "").replace(/\D/g, ""),
+    CEP: cleanCep(invoice.destCep || "00000000"),
     cPais: "1058",
     xPais: "BRASIL",
     ...(invoice.destTelefone ? { fone: invoice.destTelefone.replace(/\D/g, "") } : {}),
