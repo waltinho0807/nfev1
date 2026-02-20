@@ -1,6 +1,9 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
+import dns from "dns";
+
+dns.setDefaultResultOrder("ipv4first");
 
 const databaseUrl = process.env.DATABASE_URL || "";
 const hasSslDisable = databaseUrl.includes("sslmode=disable");
