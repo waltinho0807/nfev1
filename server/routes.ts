@@ -57,27 +57,38 @@ export async function registerRoutes(
 
   const PgSession = connectPgSimple(session);
   const dbUrl = process.env.DATABASE_URL || "";
-  const needsSSL = process.env.NODE_ENV === "production" || process.env.DATABASE_SSL === "true";
+  const hasSslDisable = dbUrl.includes("sslmode=disable");
+  const isLocal = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
+  const forceSSL = process.env.DATABASE_SSL === "true";
+  const useSSL = forceSSL || (!hasSslDisable && !isLocal && dbUrl.length > 0);
+
   const sessionPool = new Pool({
     connectionString: dbUrl,
-    ...(needsSSL ? { ssl: { rejectUnauthorized: false } } : {}),
+    ...(useSSL ? { ssl: { rejectUnauthorized: false } } : {}),
   });
 
-  if (process.env.NODE_ENV === "production") {
-    app.set("trust proxy", 1);
-  }
+  sessionPool.on("error", (err) => {
+    console.error("Session pool error:", err.message);
+  });
+
+  app.set("trust proxy", 1);
+
+  const sessionStore = new PgSession({
+    pool: sessionPool,
+    tableName: "user_sessions",
+    createTableIfMissing: true,
+    errorLog: (err: Error) => {
+      console.error("Session store error:", err.message);
+    },
+  });
 
   app.use(
     session({
-      store: new PgSession({
-        pool: sessionPool,
-        tableName: "user_sessions",
-        createTableIfMissing: true,
-      }),
+      store: sessionStore,
       secret: process.env.SESSION_SECRET || "nfe-system-secret-key-fallback",
       resave: false,
       saveUninitialized: false,
-      proxy: process.env.NODE_ENV === "production",
+      proxy: true,
       cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
