@@ -71,12 +71,22 @@ export async function registerRoutes(
     console.error("Session pool error:", err.message);
   });
 
+  await sessionPool.query(`
+    CREATE TABLE IF NOT EXISTS "user_sessions" (
+      "sid" varchar NOT NULL COLLATE "default",
+      "sess" json NOT NULL,
+      "expire" timestamp(6) NOT NULL,
+      CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("sid")
+    ) WITH (OIDS=FALSE);
+    CREATE INDEX IF NOT EXISTS "IDX_user_sessions_expire" ON "user_sessions" ("expire");
+  `);
+
   app.set("trust proxy", 1);
 
   const sessionStore = new PgSession({
     pool: sessionPool,
     tableName: "user_sessions",
-    createTableIfMissing: true,
+    createTableIfMissing: false,
     errorLog: (err: Error) => {
       console.error("Session store error:", err.message);
     },
