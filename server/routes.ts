@@ -56,7 +56,12 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   const PgSession = connectPgSimple(session);
-  const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const dbUrl = process.env.DATABASE_URL || "";
+  const needsSSL = process.env.NODE_ENV === "production" || process.env.DATABASE_SSL === "true";
+  const sessionPool = new Pool({
+    connectionString: dbUrl,
+    ...(needsSSL ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
 
   if (process.env.NODE_ENV === "production") {
     app.set("trust proxy", 1);
