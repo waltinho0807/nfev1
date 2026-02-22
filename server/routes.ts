@@ -58,6 +58,10 @@ export async function registerRoutes(
   const PgSession = connectPgSimple(session);
   const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+
   app.use(
     session({
       store: new PgSession({
@@ -68,6 +72,7 @@ export async function registerRoutes(
       secret: process.env.SESSION_SECRET || "nfe-system-secret-key-fallback",
       resave: false,
       saveUninitialized: false,
+      proxy: process.env.NODE_ENV === "production",
       cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
