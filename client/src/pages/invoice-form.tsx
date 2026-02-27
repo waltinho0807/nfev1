@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Save, X, Plus, Trash2, FileText } from "lucide-react";
-import { maskCnpj, maskCpf, maskCep, maskPhone } from "@/lib/masks";
+import { maskCnpj, maskCpf, maskCep, maskPhone, isValidCpf, isValidCnpj } from "@/lib/masks";
 import { useRoute } from "wouter";
 import type { Product, Emitter, Invoice, InvoiceItem, InsertInvoice, InsertInvoiceItem } from "@shared/schema";
 
@@ -284,6 +284,18 @@ export default function InvoiceForm() {
     if (!form.destNome || !form.destCpfCnpj || !form.naturezaOperacao) {
       toast({ title: "Preencha os dados do destinatário", variant: "destructive" });
       return;
+    }
+    const cpfCnpjDigits = form.destCpfCnpj.replace(/\D/g, "");
+    if (form.destTipoPessoa === "J") {
+      if (!isValidCnpj(cpfCnpjDigits)) {
+        toast({ title: "CNPJ do destinatário inválido", description: "Verifique os dígitos e tente novamente.", variant: "destructive" });
+        return;
+      }
+    } else {
+      if (!isValidCpf(cpfCnpjDigits)) {
+        toast({ title: "CPF do destinatário inválido", description: "Verifique os dígitos e tente novamente.", variant: "destructive" });
+        return;
+      }
     }
     if (items.length === 0) {
       toast({ title: "Adicione pelo menos um item", variant: "destructive" });
